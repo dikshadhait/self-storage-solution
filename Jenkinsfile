@@ -4,19 +4,16 @@ pipeline {
             yaml '''
 apiVersion: v1
 kind: Pod
-
 spec:
   containers:
-
-  - name: kaniko
-    image: gcr.io/kaniko-project/executor:latest
-    command:
-  - /busybox/cat
-tty: true
-
-    volumeMounts:
-      - name: docker-config
-        mountPath: /kaniko/.docker
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:latest
+      command:
+        - /busybox/cat
+      tty: true
+      volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker
 
   volumes:
     - name: docker-config
@@ -32,6 +29,8 @@ tty: true
     environment {
         AWS_ACCOUNT_ID = '842091915944'
         AWS_REGION = 'ap-south-1'
+        ECR_REPO_BACKEND = 'self-storage-backend'
+        ECR_REPO_FRONTEND = 'self-storage-frontend'
     }
 
     stages {
@@ -43,29 +42,27 @@ tty: true
             }
         }
 
-        stage('Build & Push Backend') {
+        stage('Build Backend Image') {
             steps {
                 container('kaniko') {
-
                     sh '''
                     /kaniko/executor \
                       --context `pwd`/backend \
                       --dockerfile `pwd`/backend/Dockerfile \
-                      --destination 842091915944.dkr.ecr.ap-south-1.amazonaws.com/self-storage-backend:latest
+                      --destination=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_BACKEND:latest
                     '''
                 }
             }
         }
 
-        stage('Build & Push Frontend') {
+        stage('Build Frontend Image') {
             steps {
                 container('kaniko') {
-
                     sh '''
                     /kaniko/executor \
                       --context `pwd`/frontend \
                       --dockerfile `pwd`/frontend/Dockerfile \
-                      --destination 842091915944.dkr.ecr.ap-south-1.amazonaws.com/self-storage-frontend:latest
+                      --destination=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_FRONTEND:latest
                     '''
                 }
             }
