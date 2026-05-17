@@ -1,1 +1,13 @@
-<h2>Dashboard Works!</h2>
+<h2>Storage Units Dashboard</h2>
+
+<div *ngFor="let unit of storageUnits">
+
+  <p><b>Unit:</b> {{ unit.unit }}</p>
+
+  <p><b>Size:</b> {{ unit.size }}</p>
+
+  <p><b>Status:</b> {{ unit.status }}</p>
+
+  <hr>
+
+</div>
