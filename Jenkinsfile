@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+    label 'built-in'
+}
 
     environment {
         AWS_ACCOUNT_ID = '842091915944'
