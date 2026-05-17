@@ -4,22 +4,28 @@ pipeline {
             yaml '''
 apiVersion: v1
 kind: Pod
+
 spec:
   containers:
-  - name: docker
-    image: docker:27.0.3
+
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
     command:
-    - cat
-    tty: true
+      - sleep
+    args:
+      - 999999
 
     volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run/docker.sock
+      - name: docker-config
+        mountPath: /kaniko/.docker
 
   volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
+    - name: docker-config
+      secret:
+        secretName: ecr-secret
+        items:
+          - key: .dockerconfigjson
+            path: config.json
 '''
         }
     }
@@ -27,8 +33,6 @@ spec:
     environment {
         AWS_ACCOUNT_ID = '842091915944'
         AWS_REGION = 'ap-south-1'
-        BACKEND_REPO = 'self-storage-backend'
-        FRONTEND_REPO = 'self-storage-frontend'
     }
 
     stages {
@@ -40,22 +44,30 @@ spec:
             }
         }
 
-        stage('Build Backend Docker Image') {
+        stage('Build & Push Backend') {
             steps {
-                container('docker') {
-                    dir('backend') {
-                        sh 'docker build -t self-storage-backend:latest .'
-                    }
+                container('kaniko') {
+
+                    sh '''
+                    /kaniko/executor \
+                      --context `pwd`/backend \
+                      --dockerfile `pwd`/backend/Dockerfile \
+                      --destination 842091915944.dkr.ecr.ap-south-1.amazonaws.com/self-storage-backend:latest
+                    '''
                 }
             }
         }
 
-        stage('Build Frontend Docker Image') {
+        stage('Build & Push Frontend') {
             steps {
-                container('docker') {
-                    dir('frontend') {
-                        sh 'docker build -t self-storage-frontend:latest .'
-                    }
+                container('kaniko') {
+
+                    sh '''
+                    /kaniko/executor \
+                      --context `pwd`/frontend \
+                      --dockerfile `pwd`/frontend/Dockerfile \
+                      --destination 842091915944.dkr.ecr.ap-south-1.amazonaws.com/self-storage-frontend:latest
+                    '''
                 }
             }
         }
